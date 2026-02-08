@@ -1,0 +1,186 @@
+.profileWrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 48px 24px;
+  background-color: #ffffff;
+}
+
+.profileContainer {
+  width: 100%;
+  max-width: 1336px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.profileHeader {
+  display: flex;
+  gap: 24px;
+}
+
+.avatar {
+  width: 112px;
+  height: 112px;
+  border-radius: 9999px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.infoBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.mainInfo {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.nameAndHandle {
+  display: flex;
+  flex-direction: column;
+}
+
+.name {
+  font-size: 24px;
+  font-weight: 600;
+  color: #030712;
+  margin: 0;
+  line-height: 32px;
+}
+
+.username {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.actionButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.editButton,
+.followButton {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.2s;
+}
+
+.editButton {
+  background: #ffffff;
+  border-color: #e5e7eb;
+  color: #030712;
+}
+.editButton:hover {
+  background-color: #f9fafb;
+}
+
+.followButton {
+  background: #895af6;
+  color: #ffffff;
+}
+.followButton:hover {
+  background: #7c3bed;
+}
+
+.logoutButton {
+  padding: 8px 16px;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: 1px solid #ef4444;
+  background: #ef4444;
+  color: #ffffff;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.logoutButton:hover {
+  background: #dc2626;
+  opacity: 0.9;
+}
+
+.bio {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+}
+
+.details {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.website {
+  color: #6b7280;
+  text-decoration: underline;
+}
+
+.stats {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 24px;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.statNumber {
+  font-weight: 600;
+  color: #030712;
+  margin-right: 4px;
+}
+
+/* Табы */
+.contentTabs {
+  width: 100%;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.tabNav {
+  display: flex;
+  gap: 16px;
+}
+
+.tabButton {
+  padding: 4px 4px 12px 4px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+.tabButton:hover {
+  color: #030712;
+}
+
+.tabButton.active {
+  color: #030712;
+  border-bottom-color: #895af6;
+}
+
+/* Сетка статей */
+.articlesGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+  gap: 24px;
+}

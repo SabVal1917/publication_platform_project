@@ -1,0 +1,148 @@
+/* src/pages/ArticlePage/ArticlePage.module.css */
+
+.articleWrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding: 40px 24px;
+  background-color: #ffffff;
+}
+
+.articleContainer {
+  width: 100%;
+  max-width: 768px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.articleHeader {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 24px;
+}
+
+.title {
+  font-size: 30px;
+  line-height: 38px;
+  letter-spacing: -0.75px;
+  color: #030712;
+  font-weight: 600;
+  margin: 0;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.button {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 8px 16px;
+  height: 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  color: #030712;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.button:hover {
+  background-color: #f9fafb;
+}
+
+.upvoteButton {
+  background: #f3f4f6;
+  border-color: #f3f4f6;
+}
+
+.tagsContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  display: flex;
+  align-items: center;
+  padding: 3px 11px;
+  background: #f3f4f6;
+  border-radius: 9999px;
+  font-size: 12px;
+  line-height: 16px;
+  text-transform: capitalize;
+  color: #030712;
+}
+
+.articleBody {
+  font-size: 16px;
+  line-height: 28px;
+  color: #334155;
+}
+
+/* Стили для элементов внутри контента статьи */
+.articleBody h2 {
+  font-size: 24px;
+  line-height: 32px;
+  color: #0f172a;
+  margin-top: 40px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.articleBody pre {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-family: "Liberation Mono", "Courier New", monospace;
+  font-size: 14px;
+}
+
+.articleBody code {
+  font-family: inherit;
+}
+
+/* Стили для страницы 404 */
+.notFound {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 50px;
+  text-align: center;
+  color: #374151;
+}
+
+.notFound h1 {
+  font-size: 72px;
+  margin: 0;
+  color: #895af6;
+}
+
+.notFound p {
+  font-size: 24px;
+}
+
+.homeLink {
+  margin-top: 24px;
+  padding: 12px 24px;
+  background: #895af6;
+  color: #ffffff;
+  text-decoration: none;
+  border-radius: 10px;
+  transition: background-color 0.2s;
+}
+
+.homeLink:hover {
+  background: #7c3bed;
+}

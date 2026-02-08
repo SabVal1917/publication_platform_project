@@ -1,0 +1,108 @@
+.formContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  width: 100%;
+  max-width: 450px;
+  margin-top: 50px;
+}
+
+.form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.title {
+  font-size: 36px;
+  font-weight: 400;
+  line-height: 40px;
+  color: #030712;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.input,
+.textarea {
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #6b7280;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: inherit; /* Наследуем шрифт */
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: #6b7280;
+}
+
+.input:focus,
+.textarea:focus {
+  outline: none;
+  border-color: #030712;
+  box-shadow: 0 0 0 2px rgba(3, 7, 18, 0.1);
+  color: #030712;
+}
+
+/* Стили для текстового поля */
+.textarea {
+  min-height: 150px; /* Минимальная высота */
+  resize: vertical; /* Разрешаем изменять размер только по вертикали */
+}
+
+.error {
+  color: #ef4444;
+  font-size: 12px;
+}
+
+.button {
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: 1px solid #030712;
+  background: #030712;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.button:hover {
+  opacity: 0.9;
+}
+
+.buttonGroup {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.secondaryButton {
+  background: #ffffff;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.secondaryButton:hover {
+  background: #f9fafb;
+  opacity: 1;
+}

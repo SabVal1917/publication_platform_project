@@ -1,0 +1,23 @@
+.footerMargin {
+  padding-top: 64px;
+  width: 100%;
+}
+
+.footer {
+  border-top: 1px solid #e5e7eb;
+  padding: 0 260px;
+  display: flex;
+  justify-content: center;
+}
+
+.container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 40px 32px;
+  width: 1400px;
+  max-width: 1400px;
+  height: 100px;
+  color: #6b7280;
+  font-size: 14px;
+}

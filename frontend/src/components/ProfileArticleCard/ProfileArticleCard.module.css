@@ -1,0 +1,73 @@
+.card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0px 1px 2px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.08);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.title {
+  font-size: 20px;
+  line-height: 25px;
+  color: #030712;
+  margin: 0;
+  font-weight: 500;
+}
+
+.likes {
+  font-size: 12px;
+  line-height: 16px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.description {
+  font-size: 16px;
+  line-height: 24px;
+  color: #6b7280;
+  margin: 0;
+  flex-grow: 1;
+}
+
+.tags {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  display: flex;
+  align-items: center;
+  padding: 3px 11px;
+  background: #f3f4f6;
+  border-radius: 9999px;
+  font-size: 12px;
+  line-height: 16px;
+  text-transform: capitalize;
+  color: #030712;
+}
+
+.meta {
+  font-size: 12px;
+  line-height: 16px;
+  color: #6b7280;
+}
