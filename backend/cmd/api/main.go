@@ -1,8 +1,13 @@
 package main
 
 import (
+	"context"
+	"errors"
 	"log"
 	"net/http"
+	"os/signal"
+	"syscall"
+	"time"
 
 	"backend/internal/config"
 	"backend/internal/handlers"
@@ -64,8 +69,45 @@ func main() {
 		r.Post("/api/articles/{id}/like", articleHandler.LikeArticle)
 	})
 
-	log.Printf("Server starting on port %s \n", cfg.HTTPPort)
-	if err := http.ListenAndServe(":"+cfg.HTTPPort, r); err != nil {
-		log.Fatal(err)
+	// graceful shutdown
+	server := &http.Server{
+		Addr:    ":" + cfg.HTTPPort,
+		Handler: r,
 	}
+	serverErrChan := make(chan error, 1)
+	go func() {
+		log.Printf("HTTP server starting on %s", server.Addr)
+		serverErrChan <- server.ListenAndServe()
+	}()
+
+	signalCtx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	select {
+	case <-signalCtx.Done():
+		log.Printf("shutdown signal received")
+
+	case err := <-serverErrChan:
+		if !errors.Is(err, http.ErrServerClosed) {
+			log.Printf("HTTP server error: %v", err)
+		}
+		return
+	}
+	log.Printf("shutdown signal received")
+
+	const shutdownTimeout = 5 * time.Second
+	log.Printf("shutting down HTTP server (timeout: %s)", shutdownTimeout)
+
+	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	defer cancel()
+	if err := server.Shutdown(ctx); err != nil {
+		log.Printf("HTTP server shutdown error: %v", err)
+		return
+	}
+
+	err := <-serverErrChan
+	if !errors.Is(err, http.ErrServerClosed) {
+		log.Printf("HTTP server stopped with err: %v", err)
+	}
+	log.Printf("HTTP server stopped gracefully")
 }
