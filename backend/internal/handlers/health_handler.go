@@ -23,9 +23,9 @@ func (hh *HealthHandler) Live(w http.ResponseWriter, r *http.Request) {
 }
 
 func (hh *HealthHandler) Ready(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*1)
 	defer cancel()
-	if error := hh.dbPinger.PingContext(ctx); error != nil {
+	if err := hh.dbPinger.PingContext(ctx); err != nil {
 		w.WriteHeader(http.StatusServiceUnavailable)
 		return
 	}
