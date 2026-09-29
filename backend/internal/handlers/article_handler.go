@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"backend/internal/domain/models"
+	"backend/internal/handlers/middleware"
 	"backend/internal/repository/postgres"
 
 	"github.com/go-chi/chi/v5"
@@ -27,12 +28,12 @@ func (h *ArticleHandler) GetAllArticles(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	
+
 	if articles == nil {
 		w.Write([]byte("[]"))
 		return
 	}
-	
+
 	json.NewEncoder(w).Encode(articles)
 }
 
@@ -67,7 +68,11 @@ func (h *ArticleHandler) CreateArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID := r.Context().Value("userID").(int)
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 	a.AuthorID = userID
 
 	id, err := h.Repo.Create(&a)
@@ -89,7 +94,7 @@ func (h *ArticleHandler) LikeArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, ok := r.Context().Value("userID").(int)
+	userID, ok := middleware.UserIDFromContext(r.Context())
 	if !ok {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return

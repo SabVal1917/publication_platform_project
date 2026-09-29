@@ -474,10 +474,7 @@ const ArticlePage = () => {
           </div>
         </header>
 
-        <article
-          className={styles.articleBody}
-          dangerouslySetInnerHTML={{ __html: article.content }}
-        />
+        <article className={styles.articleBody}>{article.content}</article>
 
         <section style={{ marginTop: "32px" }}>
           <h2 style={{ fontSize: "20px", marginBottom: "16px" }}>Комментарии</h2>

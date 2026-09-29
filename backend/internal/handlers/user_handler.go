@@ -10,11 +10,12 @@ import (
 )
 
 type UserHandler struct {
-	Repo *postgres.UserRepository
+	Repo     *postgres.UserRepository
+	TManager *utils.TokenManager
 }
 
-func NewUserHandler(repo *postgres.UserRepository) *UserHandler {
-	return &UserHandler{Repo: repo}
+func NewUserHandler(repo *postgres.UserRepository, tokens *utils.TokenManager) *UserHandler {
+	return &UserHandler{Repo: repo, TManager: tokens}
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
@@ -42,13 +43,23 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, _ := utils.GenerateToken(u.ID)
-
+	token, err := h.TManager.GenerateToken(u.ID)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "Ошибка генерации токена")
+		return
+	}
+	uResp := models.UserResponse{
+		ID:        u.ID,
+		Username:  u.Username,
+		Email:     u.Email,
+		AvatarURL: u.AvatarURL,
+		Bio:       u.Bio,
+	}
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"token": token,
-		"user":  u,
+		"user":  uResp,
 	})
 }
 
@@ -73,15 +84,21 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := utils.GenerateToken(user.ID)
+	token, err := h.TManager.GenerateToken(user.ID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Ошибка генерации токена")
 		return
 	}
-
+	uResp := models.UserResponse{
+		ID:        user.ID,
+		Username:  user.Username,
+		Email:     user.Email,
+		AvatarURL: user.AvatarURL,
+		Bio:       user.Bio,
+	}
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"token": token,
-		"user":  user,
+		"user":  uResp,
 	})
 }

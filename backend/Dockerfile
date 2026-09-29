@@ -7,9 +7,7 @@ RUN go mod download
 
 COPY . .
 
-RUN go get github.com/lib/pq && go mod tidy
-
-RUN go build -o main ./cmd/api/main.go
+RUN go build -mod=readonly -o main ./cmd/api/main.go
 
 FROM alpine:latest
 

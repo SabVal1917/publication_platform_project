@@ -115,11 +115,17 @@ const CreateArticlePage = () => {
         alert("Статья успешно опубликована!");
         navigate("/");
       } else {
-        const errorData = await response.json();
-        alert(
-          "Ошибка при публикации: " +
-            (errorData.message || "Неизвестная ошибка")
-        );
+        const responseBody = await response.text();
+        let errorMessage = responseBody.trim() || "Неизвестная ошибка";
+
+        try {
+          const errorData = JSON.parse(responseBody);
+          errorMessage = errorData.message || errorMessage;
+        } catch {
+          // Backend может вернуть обычный текст через http.Error.
+        }
+
+        alert("Ошибка при публикации: " + errorMessage);
       }
     } catch (error) {
       console.error("Ошибка сети:", error);

@@ -11,9 +11,9 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  // Инициализируем поисковый запрос из URL, декодируя его
+  // URLSearchParams уже возвращает декодированное значение.
   const initialSearchParam = searchParams.get("search");
-  const initialSearch = initialSearchParam ? decodeURIComponent(initialSearchParam) : "";
+  const initialSearch = initialSearchParam || "";
   const [searchQuery, setSearchQuery] = useState(initialSearch);
   const [sortBy, setSortBy] = useState("newest");
 

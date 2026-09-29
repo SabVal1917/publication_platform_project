@@ -4,45 +4,26 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"os"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func ConnectDB() *sql.DB {
-	host := os.Getenv("DB_HOST")
-	if host == "" {
-		host = "localhost" 
-	}
-	
-	user := os.Getenv("DB_USER")
-	if user == "" {
-		user = "user"
-	}
-	
-	password := os.Getenv("DB_PASSWORD")
-	if password == "" {
-		password = "password"
-	}
-	
-	dbname := os.Getenv("DB_NAME")
-	if dbname == "" {
-		dbname = "blog"
-	}
+func ConnectDB(dbc DBConfig) (*sql.DB, error) {
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
+		dbc.Host, dbc.User, dbc.Password, dbc.Name, dbc.Port, dbc.SSLMode)
 
-	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=5432 sslmode=disable", 
-		host, user, password, dbname)
-
-	fmt.Println("Connecting to DB at:", host) 
+	fmt.Println("Connecting to DB at:", dbc.Host)
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
-		log.Fatalf("Ошибка открытия БД: %v", err)
+		log.Printf("Ошибка открытия БД: %v \n", err)
+		return nil, err
 	}
 
 	if err := db.Ping(); err != nil {
-		log.Fatalf("Ошибка подключения к БД (Ping): %v", err)
+		log.Printf("Ошибка подключения к БД (Ping): %v \n", err)
+		return nil, err
 	}
 
 	log.Println("Успешное подключение к БД!")
-	return db
+	return db, nil
 }

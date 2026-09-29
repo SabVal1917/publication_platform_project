@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"backend/internal/domain/models"
+	"backend/internal/handlers/middleware"
 	"backend/internal/repository/postgres"
 
 	"github.com/go-chi/chi/v5"
@@ -48,9 +49,13 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	c.ArticleID = articleID
-	userID := r.Context().Value("userID").(int)
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
 	c.AuthorID = userID
-	
+
 	if err := h.Repo.Create(&c); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

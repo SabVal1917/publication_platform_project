@@ -11,6 +11,15 @@ type User struct {
 	Bio          string    `json:"bio"`
 	CreatedAt    time.Time `json:"created_at"`
 }
+
+type UserResponse struct {
+	ID        int    `json:"id"`
+	Username  string `json:"username"`
+	Email     string `json:"email"`
+	AvatarURL string `json:"avatar_url"`
+	Bio       string `json:"bio"`
+}
+
 type Article struct {
 	ID             int       `json:"id"`
 	Title          string    `json:"title"`
@@ -22,8 +31,8 @@ type Article struct {
 	CreatedAt      time.Time `json:"created_at"`
 	UpdatedAt      time.Time `json:"updated_at"`
 	AuthorUsername string    `json:"author_username,omitempty"`
-	IsLiked        bool      `json:"is_liked"` 
-	Tags           []string  `json:"tags"` 
+	IsLiked        bool      `json:"is_liked"`
+	Tags           []string  `json:"tags"`
 }
 
 type Comment struct {
