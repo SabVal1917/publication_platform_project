@@ -39,6 +39,7 @@ func main() {
 	articleHandler := handlers.NewArticleHandler(articleRepo)
 	commentHandler := handlers.NewCommentHandler(commentRepo)
 	userHandler := handlers.NewUserHandler(userRepo, tokens)
+	healthHandler := handlers.NewHealthHandler(db)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -57,6 +58,8 @@ func main() {
 	r.Get("/api/articles", articleHandler.GetAllArticles)
 	r.Get("/api/articles/{id}", articleHandler.GetArticleByID)
 	r.Get("/api/articles/{id}/comments", commentHandler.GetCommentsByArticle)
+	r.Get("/health/live", healthHandler.Live)
+	r.Get("/health/ready", healthHandler.Ready)
 
 	r.Post("/api/register", userHandler.Register)
 	r.Post("/api/login", userHandler.Login)
@@ -93,8 +96,6 @@ func main() {
 		}
 		return
 	}
-	log.Printf("shutdown signal received")
-
 	const shutdownTimeout = 5 * time.Second
 	log.Printf("shutting down HTTP server (timeout: %s)", shutdownTimeout)
 
