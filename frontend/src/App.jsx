@@ -7,6 +7,7 @@ import RegisterPage from "./pages/RegisterPage/RegisterPage";
 import CreateArticlePage from "./pages/CreateArticlePage/CreateArticlePage";
 import ProfilePage from "./pages/ProfilePage/ProfilePage";
 import ArticlePage from "./pages/ArticlePage/ArticlePage";
+import EditArticlePage from "./pages/EditArticlePage/EditArticlePage";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
         <Route path="profile" element={<ProfilePage />} />
         <Route path="profile/:username" element={<ProfilePage />} />
         <Route path="articles/:id" element={<ArticlePage />} />
+        <Route path="articles/:id/edit" element={<EditArticlePage />} />
       </Route>
     </Routes>
   );
