@@ -2,6 +2,28 @@ import React, { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import styles from "./ArticlePage.module.css";
 
+const readErrorMessage = async (response, fallback) => {
+  const responseBody = await response.text();
+  if (!responseBody.trim()) return fallback;
+
+  try {
+    const data = JSON.parse(responseBody);
+    return data.message || fallback;
+  } catch {
+    return responseBody.trim();
+  }
+};
+
+const readStoredUserID = () => {
+  try {
+    const user = JSON.parse(localStorage.getItem("user"));
+    const userID = Number(user?.id);
+    return Number.isInteger(userID) && userID > 0 ? userID : null;
+  } catch {
+    return null;
+  }
+};
+
 // Компонент формы ответа - вынесен наружу для стабильности
 const ReplyForm = ({ commentId, onSubmit, onCancel, value, onChange }) => {
   const textareaId = `reply-input-${commentId}`;
@@ -188,6 +210,8 @@ const ArticlePage = () => {
   const [liking, setLiking] = useState(false);
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState({});
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState("");
 
   // 1. Сначала определяем ВСЕ хуки (useCallback)
   const handleReply = useCallback(async (parentId) => {
@@ -334,6 +358,9 @@ const ArticlePage = () => {
   };
 
   const commentTree = buildCommentTree(comments);
+  const currentUserID = readStoredUserID();
+  const isOwner =
+    currentUserID !== null && currentUserID === Number(article?.author_id);
 
   const handleLike = async () => {
     const token = localStorage.getItem("token");
@@ -360,6 +387,43 @@ const ArticlePage = () => {
       alert("Ошибка при лайке");
     } finally {
       setLiking(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Удалить статью? Это действие нельзя отменить.")) {
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      navigate("/login");
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      setDeleteError("");
+      const response = await fetch(`/api/articles/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (response.ok) {
+        navigate("/", { replace: true });
+        return;
+      }
+
+      if (response.status === 401) {
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      setDeleteError(await readErrorMessage(response, "Не удалось удалить статью"));
+    } catch {
+      setDeleteError("Ошибка соединения с сервером");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -472,6 +536,26 @@ const ArticlePage = () => {
               </div>
             )}
           </div>
+          {isOwner && (
+            <div className={styles.actions}>
+              <Link to={`/articles/${id}/edit`} className={styles.button}>
+                Редактировать
+              </Link>
+              <button
+                type="button"
+                className={`${styles.button} ${styles.dangerButton}`}
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Удаление..." : "Удалить"}
+              </button>
+            </div>
+          )}
+          {deleteError && (
+            <p className={styles.actionError} role="alert">
+              {deleteError}
+            </p>
+          )}
         </header>
 
         <article className={styles.articleBody}>{article.content}</article>

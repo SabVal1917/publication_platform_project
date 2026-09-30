@@ -35,6 +35,7 @@
 
 .actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
@@ -52,10 +53,31 @@
   color: #030712;
   cursor: pointer;
   transition: background-color 0.2s;
+  text-decoration: none;
 }
 
 .button:hover {
   background-color: #f9fafb;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.dangerButton {
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.dangerButton:hover {
+  background-color: #fef2f2;
+}
+
+.actionError {
+  margin: 0;
+  color: #b91c1c;
+  font-size: 14px;
 }
 
 .upvoteButton {
