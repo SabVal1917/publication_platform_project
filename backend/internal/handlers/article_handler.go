@@ -1,9 +1,15 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
+	"log"
 	"net/http"
 	"strconv"
+	"strings"
+	"time"
+	"unicode/utf8"
 
 	"backend/internal/domain/models"
 	"backend/internal/handlers/middleware"
@@ -111,4 +117,112 @@ func (h *ArticleHandler) LikeArticle(w http.ResponseWriter, r *http.Request) {
 		"likes_count": newCount,
 		"is_liked":    isLiked,
 	})
+}
+
+func (h *ArticleHandler) UpdateArticle(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	articleID, err := strconv.Atoi(idStr)
+	if err != nil || articleID <= 0 {
+		http.Error(w, "Некорректный ID", http.StatusBadRequest)
+		return
+	}
+
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return
+	}
+
+	var a models.UpdateArticleRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&a); err != nil {
+		http.Error(w, "Неверный формат JSON", http.StatusBadRequest)
+		return
+	}
+	if strings.TrimSpace(a.Title) == "" ||
+		strings.TrimSpace(a.Content) == "" {
+		respondWithError(w, http.StatusBadRequest, "Заголовок и содержимое обязательны")
+		return
+	}
+	if utf8.RuneCountInString(a.Title) > 200 {
+		respondWithError(w, http.StatusBadRequest, "Заголовок не должен превышать 200 символов")
+		return
+	}
+
+	cleanTags := make([]string, 0, len(a.Tags))
+	seenTags := make(map[string]struct{}, len(a.Tags))
+	for _, rawTag := range a.Tags {
+		tag := strings.TrimSpace(rawTag)
+		if tag == "" {
+			continue
+		}
+		if utf8.RuneCountInString(tag) > 50 {
+			respondWithError(w, http.StatusBadRequest, "Тег не должен превышать 50 символов")
+			return
+		}
+
+		tag = strings.ToLower(tag)
+		if _, exists := seenTags[tag]; exists {
+			continue
+		}
+
+		seenTags[tag] = struct{}{}
+		cleanTags = append(cleanTags, tag)
+	}
+	a.Tags = cleanTags
+
+	ctx, cancel := context.WithTimeout(r.Context(), time.Second*5)
+	defer cancel()
+
+	err = h.Repo.Update(ctx, articleID, userID, a)
+	switch {
+	case err == nil:
+		w.WriteHeader(http.StatusNoContent)
+
+	case errors.Is(err, postgres.ErrArticleNotFound):
+		respondWithError(w, http.StatusNotFound, "Статья не найдена")
+
+	case errors.Is(err, postgres.ErrArticleForbidden):
+		respondWithError(w, http.StatusForbidden, "Нельзя редактировать чужую статью")
+
+	case errors.Is(err, context.DeadlineExceeded):
+		respondWithError(w, http.StatusGatewayTimeout, "Превышено время ожидания базы данных")
+
+	default:
+		log.Printf("update article %d: %v", articleID, err)
+		respondWithError(w, http.StatusInternalServerError, "Не удалось обновить статью")
+	}
+}
+
+func (h *ArticleHandler) DeleteArticle(w http.ResponseWriter, r *http.Request) {
+	idStr := chi.URLParam(r, "id")
+	articleID, err := strconv.Atoi(idStr)
+	if err != nil || articleID <= 0 {
+		respondWithError(w, http.StatusBadRequest, "Некорректный ID")
+		return
+	}
+
+	userID, ok := middleware.UserIDFromContext(r.Context())
+	if !ok {
+		respondWithError(w, http.StatusUnauthorized, "Требуется авторизация")
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	err = h.Repo.Delete(ctx, articleID, userID)
+	switch {
+	case err == nil:
+		w.WriteHeader(http.StatusNoContent)
+	case errors.Is(err, postgres.ErrArticleNotFound):
+		respondWithError(w, http.StatusNotFound, "Статья не найдена")
+	case errors.Is(err, postgres.ErrArticleForbidden):
+		respondWithError(w, http.StatusForbidden, "Нельзя удалить чужую статью")
+	case errors.Is(err, context.DeadlineExceeded):
+		respondWithError(w, http.StatusGatewayTimeout, "Превышено время ожидания базы данных")
+	default:
+		log.Printf("delete article %d: %v", articleID, err)
+		respondWithError(w, http.StatusInternalServerError, "Не удалось удалить статью")
+	}
 }

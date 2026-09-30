@@ -70,6 +70,8 @@ func main() {
 		r.Post("/api/articles", articleHandler.CreateArticle)
 		r.Post("/api/articles/{id}/comments", commentHandler.CreateComment)
 		r.Post("/api/articles/{id}/like", articleHandler.LikeArticle)
+		r.Put("/api/articles/{id}", articleHandler.UpdateArticle)
+		r.Delete("/api/articles/{id}", articleHandler.DeleteArticle)
 	})
 
 	// graceful shutdown

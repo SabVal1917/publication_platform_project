@@ -35,6 +35,12 @@ type Article struct {
 	Tags           []string  `json:"tags"`
 }
 
+type UpdateArticleRequest struct {
+	Title   string   `json:"title"`
+	Content string   `json:"content"`
+	Tags    []string `json:"tags"`
+}
+
 type Comment struct {
 	ID             int       `json:"id"`
 	Content        string    `json:"content"`
