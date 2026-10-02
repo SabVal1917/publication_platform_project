@@ -27,7 +27,8 @@ func NewArticleRepository(db *sql.DB) *ArticleRepository {
 func (r *ArticleRepository) GetAll(ctx context.Context) ([]models.Article, error) {
 	query := `
 		SELECT 
-			a.id, a.title, a.slug, a.content, a.likes_count, a.created_at, u.username,
+			a.id, a.title, a.slug, a.content, a.author_id,
+			a.likes_count, a.comments_count, a.created_at, u.username,
 			COALESCE(array_agg(t.name) FILTER (WHERE t.name IS NOT NULL), '{}') as tags
 		FROM articles a
 		JOIN users u ON a.author_id = u.id
@@ -46,7 +47,11 @@ func (r *ArticleRepository) GetAll(ctx context.Context) ([]models.Article, error
 	var articles []models.Article
 	for rows.Next() {
 		var a models.Article
-		if err := rows.Scan(&a.ID, &a.Title, &a.Slug, &a.Content, &a.LikesCount, &a.CreatedAt, &a.AuthorUsername, pq.Array(&a.Tags)); err != nil {
+		if err := rows.Scan(
+			&a.ID, &a.Title, &a.Slug, &a.Content, &a.AuthorID,
+			&a.LikesCount, &a.CommentsCount, &a.CreatedAt, &a.AuthorUsername,
+			pq.Array(&a.Tags),
+		); err != nil {
 			return nil, err
 		}
 		articles = append(articles, a)
@@ -60,7 +65,8 @@ func (r *ArticleRepository) GetAll(ctx context.Context) ([]models.Article, error
 func (r *ArticleRepository) GetByID(ctx context.Context, id int) (*models.Article, error) {
 	query := `
 		SELECT 
-			a.id, a.title, a.slug, a.content, a.author_id, a.likes_count, a.created_at, u.username,
+			a.id, a.title, a.slug, a.content, a.author_id,
+			a.likes_count, a.comments_count, a.created_at, u.username,
 			COALESCE(array_agg(t.name) FILTER (WHERE t.name IS NOT NULL), '{}') as tags
 		FROM articles a
 		JOIN users u ON a.author_id = u.id
@@ -71,7 +77,11 @@ func (r *ArticleRepository) GetByID(ctx context.Context, id int) (*models.Articl
 	`
 
 	var a models.Article
-	err := r.DB.QueryRowContext(ctx, query, id).Scan(&a.ID, &a.Title, &a.Slug, &a.Content, &a.AuthorID, &a.LikesCount, &a.CreatedAt, &a.AuthorUsername, pq.Array(&a.Tags))
+	err := r.DB.QueryRowContext(ctx, query, id).Scan(
+		&a.ID, &a.Title, &a.Slug, &a.Content, &a.AuthorID,
+		&a.LikesCount, &a.CommentsCount, &a.CreatedAt, &a.AuthorUsername,
+		pq.Array(&a.Tags),
+	)
 	if err != nil {
 		return nil, err
 	}

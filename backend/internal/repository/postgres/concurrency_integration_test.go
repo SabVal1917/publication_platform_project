@@ -29,6 +29,42 @@ func TestCanceledContextStopsQuery(t *testing.T) {
 	}
 }
 
+func TestArticleQueriesReturnCommentsCount(t *testing.T) {
+	db := integrationDB(t)
+	userID, articleID := createFixture(t, db)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	commentRepo := NewCommentRepository(db)
+	comment := &models.Comment{Content: "visible counter", AuthorID: userID, ArticleID: articleID}
+	if err := commentRepo.Create(ctx, comment); err != nil {
+		t.Fatalf("Create() comment error = %v", err)
+	}
+
+	articleRepo := NewArticleRepository(db)
+	article, err := articleRepo.GetByID(ctx, articleID)
+	if err != nil {
+		t.Fatalf("GetByID() error = %v", err)
+	}
+	if article.CommentsCount != 1 {
+		t.Fatalf("GetByID() CommentsCount = %d, want 1", article.CommentsCount)
+	}
+
+	articles, err := articleRepo.GetAll(ctx)
+	if err != nil {
+		t.Fatalf("GetAll() error = %v", err)
+	}
+	for _, item := range articles {
+		if item.ID == articleID {
+			if item.CommentsCount != 1 {
+				t.Fatalf("GetAll() CommentsCount = %d, want 1", item.CommentsCount)
+			}
+			return
+		}
+	}
+	t.Fatalf("GetAll() did not return article %d", articleID)
+}
+
 func integrationDB(t *testing.T) *sql.DB {
 	t.Helper()
 	dsn := os.Getenv("TEST_DATABASE_DSN")
