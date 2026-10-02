@@ -1,9 +1,11 @@
 package postgres
 
 import (
-	"backend/internal/domain/models"
 	"context"
 	"database/sql"
+	"fmt"
+
+	"backend/internal/domain/models"
 )
 
 type CommentRepository struct {
@@ -44,10 +46,40 @@ func (r *CommentRepository) GetByArticleID(ctx context.Context, articleID int) (
 }
 
 func (r *CommentRepository) Create(ctx context.Context, c *models.Comment) error {
+	tx, err := r.DB.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("begin comment transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
 	query := `
 		INSERT INTO comments (content, author_id, article_id, parent_id) 
 		VALUES ($1, $2, $3, $4) 
 		RETURNING id, created_at
 	`
-	return r.DB.QueryRowContext(ctx, query, c.Content, c.AuthorID, c.ArticleID, c.ParentID).Scan(&c.ID, &c.CreatedAt)
+	if err := tx.QueryRowContext(ctx, query, c.Content, c.AuthorID, c.ArticleID, c.ParentID).Scan(&c.ID, &c.CreatedAt); err != nil {
+		return fmt.Errorf("insert comment: %w", err)
+	}
+
+	result, err := tx.ExecContext(ctx,
+		`UPDATE articles
+		 SET comments_count = comments_count + 1
+		 WHERE id = $1`,
+		c.ArticleID,
+	)
+	if err != nil {
+		return fmt.Errorf("increment article comments count: %w", err)
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("read updated article rows: %w", err)
+	}
+	if affected != 1 {
+		return ErrArticleNotFound
+	}
+
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit comment transaction: %w", err)
+	}
+	return nil
 }

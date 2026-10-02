@@ -95,10 +95,13 @@ func (r *ArticleRepository) Create(ctx context.Context, a *models.Article) (int,
 	if len(a.Tags) > 0 {
 		for _, tagName := range a.Tags {
 			var tagID int
-			err = tx.QueryRowContext(ctx, `SELECT id FROM tags WHERE name = $1`, tagName).Scan(&tagID)
-			if err == sql.ErrNoRows {
-				err = tx.QueryRowContext(ctx, `INSERT INTO tags (name) VALUES ($1) RETURNING id`, tagName).Scan(&tagID)
-			}
+			err = tx.QueryRowContext(ctx,
+				`INSERT INTO tags (name)
+				 VALUES ($1)
+				 ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name
+				 RETURNING id`,
+				tagName,
+			).Scan(&tagID)
 			if err != nil {
 				return 0, err
 			}
@@ -113,43 +116,67 @@ func (r *ArticleRepository) Create(ctx context.Context, a *models.Article) (int,
 }
 
 func (r *ArticleRepository) ToggleLike(ctx context.Context, articleID, userID int) (int, bool, error) {
-	var exists bool
-	queryCheck := `SELECT EXISTS(SELECT 1 FROM article_likes WHERE user_id=$1 AND article_id=$2)`
-	err := r.DB.QueryRowContext(ctx, queryCheck, userID, articleID).Scan(&exists)
-	if err != nil {
-		return 0, false, err
-	}
-
 	tx, err := r.DB.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, false, err
+		return 0, false, fmt.Errorf("begin like transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() { _ = tx.Rollback() }()
 
-	if exists {
-		_, err = tx.ExecContext(ctx, `DELETE FROM article_likes WHERE user_id=$1 AND article_id=$2`, userID, articleID)
-		if err != nil {
-			return 0, false, err
-		}
-		_, err = tx.ExecContext(ctx, `UPDATE articles SET likes_count = likes_count - 1 WHERE id=$1`, articleID)
-	} else {
-		_, err = tx.ExecContext(ctx, `INSERT INTO article_likes (user_id, article_id) VALUES ($1, $2)`, userID, articleID)
-		if err != nil {
-			return 0, false, err
-		}
-		_, err = tx.ExecContext(ctx, `UPDATE articles SET likes_count = likes_count + 1 WHERE id=$1`, articleID)
+	var lockedArticleID int
+	err = tx.QueryRowContext(ctx,
+		`SELECT id FROM articles WHERE id = $1 FOR UPDATE`,
+		articleID,
+	).Scan(&lockedArticleID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return 0, false, ErrArticleNotFound
 	}
 	if err != nil {
-		return 0, false, err
+		return 0, false, fmt.Errorf("lock article for like: %w", err)
+	}
+
+	result, err := tx.ExecContext(ctx,
+		`DELETE FROM article_likes WHERE user_id = $1 AND article_id = $2`,
+		userID, articleID,
+	)
+	if err != nil {
+		return 0, false, fmt.Errorf("delete article like: %w", err)
+	}
+	deleted, err := result.RowsAffected()
+	if err != nil {
+		return 0, false, fmt.Errorf("read deleted like rows: %w", err)
+	}
+
+	isLiked := false
+	if deleted == 0 {
+		_, err = tx.ExecContext(ctx,
+			`INSERT INTO article_likes (user_id, article_id)
+			 VALUES ($1, $2)`,
+			userID, articleID,
+		)
+		if err != nil {
+			return 0, false, fmt.Errorf("insert article like: %w", err)
+		}
+		isLiked = true
 	}
 
 	var newCount int
-	err = tx.QueryRowContext(ctx, `SELECT likes_count FROM articles WHERE id=$1`, articleID).Scan(&newCount)
+	err = tx.QueryRowContext(ctx,
+		`UPDATE articles
+		 SET likes_count = (
+		     SELECT count(*) FROM article_likes WHERE article_id = $1
+		 )
+		 WHERE id = $1
+		 RETURNING likes_count`,
+		articleID,
+	).Scan(&newCount)
 	if err != nil {
-		return 0, false, err
+		return 0, false, fmt.Errorf("synchronize article likes count: %w", err)
 	}
 
-	return newCount, !exists, tx.Commit()
+	if err := tx.Commit(); err != nil {
+		return 0, false, fmt.Errorf("commit like transaction: %w", err)
+	}
+	return newCount, isLiked, nil
 }
 
 func (r *ArticleRepository) Update(ctx context.Context, articleID, userID int, input models.UpdateArticleRequest) error {
