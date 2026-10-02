@@ -51,6 +51,34 @@ func TestRequestLoggerWritesStructuredRecord(t *testing.T) {
 	}
 }
 
+func TestRequestLoggerSkipsSuccessfulHealthCheck(t *testing.T) {
+	var output bytes.Buffer
+	logger := NewJSONLogger(&output)
+
+	handler := RequestLogger(logger)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/health/ready", nil))
+
+	if output.Len() != 0 {
+		t.Fatalf("successful health check log = %q, want no log", output.String())
+	}
+}
+
+func TestRequestLoggerKeepsFailedHealthCheck(t *testing.T) {
+	var output bytes.Buffer
+	logger := NewJSONLogger(&output)
+
+	handler := RequestLogger(logger)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	handler.ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/health/ready", nil))
+
+	if output.Len() == 0 {
+		t.Fatal("failed health check was not logged")
+	}
+}
+
 func TestMetricsMiddlewareUsesRoutePattern(t *testing.T) {
 	db, err := sql.Open("pgx", "")
 	if err != nil {

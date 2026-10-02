@@ -33,17 +33,25 @@ func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
 			startedAt := time.Now()
 			wrapped := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 			next.ServeHTTP(wrapped, r)
+			status := responseStatus(wrapped)
+			if isHealthCheck(r) && status < http.StatusBadRequest {
+				return
+			}
 
 			logger.InfoContext(r.Context(), "http_request",
 				"request_id", middleware.GetReqID(r.Context()),
 				"method", r.Method,
 				"route", routePattern(r),
-				"status", responseStatus(wrapped),
+				"status", status,
 				"bytes", wrapped.BytesWritten(),
 				"duration_ms", float64(time.Since(startedAt).Microseconds())/1000,
 			)
 		})
 	}
+}
+
+func isHealthCheck(r *http.Request) bool {
+	return r.URL.Path == "/health/live" || r.URL.Path == "/health/ready"
 }
 
 func NewMetrics(registry *prometheus.Registry, db *sql.DB) *Metrics {
