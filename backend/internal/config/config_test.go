@@ -74,3 +74,44 @@ func TestLoadDBConfigRejectsInvalidPool(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadHTTPConfigFromEnvironment(t *testing.T) {
+	t.Setenv("DB_PASSWORD", "password")
+	t.Setenv("JWT_SECRET", "test-secret-at-least-thirty-two-bytes")
+	t.Setenv("HTTP_PORT", "9090")
+	t.Setenv("HTTP_READ_HEADER_TIMEOUT", "3s")
+	t.Setenv("HTTP_READ_TIMEOUT", "12s")
+	t.Setenv("HTTP_WRITE_TIMEOUT", "20s")
+	t.Setenv("HTTP_IDLE_TIMEOUT", "45s")
+	t.Setenv("HTTP_SHUTDOWN_TIMEOUT", "9s")
+	t.Setenv("HTTP_DRAIN_DELAY", "1500ms")
+
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
+	}
+
+	want := HTTPConfig{
+		Port:              "9090",
+		ReadHeaderTimeout: 3 * time.Second,
+		ReadTimeout:       12 * time.Second,
+		WriteTimeout:      20 * time.Second,
+		IdleTimeout:       45 * time.Second,
+		ShutdownTimeout:   9 * time.Second,
+		DrainDelay:        1500 * time.Millisecond,
+	}
+	if cfg.HTTP != want {
+		t.Fatalf("HTTP config = %+v, want %+v", cfg.HTTP, want)
+	}
+}
+
+func TestLoadRejectsInvalidHTTPTimeout(t *testing.T) {
+	t.Setenv("DB_PASSWORD", "password")
+	t.Setenv("JWT_SECRET", "test-secret-at-least-thirty-two-bytes")
+	t.Setenv("HTTP_READ_TIMEOUT", "0s")
+
+	_, err := Load()
+	if err == nil || !strings.Contains(err.Error(), "HTTP_READ_TIMEOUT") {
+		t.Fatalf("Load() error = %v, want HTTP_READ_TIMEOUT error", err)
+	}
+}

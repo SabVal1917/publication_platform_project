@@ -41,7 +41,8 @@ func main() {
 	articleHandler := handlers.NewArticleHandler(articleRepo)
 	commentHandler := handlers.NewCommentHandler(commentRepo)
 	userHandler := handlers.NewUserHandler(userRepo, tokens)
-	healthHandler := handlers.NewHealthHandler(db)
+	readiness := handlers.NewReadinessState()
+	healthHandler := handlers.NewHealthHandler(db, readiness)
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
@@ -78,8 +79,12 @@ func main() {
 
 	// graceful shutdown
 	server := &http.Server{
-		Addr:    ":" + cfg.HTTPPort,
-		Handler: r,
+		Addr:              ":" + cfg.HTTP.Port,
+		Handler:           r,
+		ReadHeaderTimeout: cfg.HTTP.ReadHeaderTimeout,
+		ReadTimeout:       cfg.HTTP.ReadTimeout,
+		WriteTimeout:      cfg.HTTP.WriteTimeout,
+		IdleTimeout:       cfg.HTTP.IdleTimeout,
 	}
 	serverErrChan := make(chan error, 1)
 	go func() {
@@ -93,6 +98,20 @@ func main() {
 	select {
 	case <-signalCtx.Done():
 		log.Printf("shutdown signal received")
+		readiness.StartDraining()
+		log.Printf("readiness disabled; draining for %s", cfg.HTTP.DrainDelay)
+		if cfg.HTTP.DrainDelay > 0 {
+			timer := time.NewTimer(cfg.HTTP.DrainDelay)
+			select {
+			case <-timer.C:
+			case err := <-serverErrChan:
+				timer.Stop()
+				if !errors.Is(err, http.ErrServerClosed) {
+					log.Printf("HTTP server error while draining: %v", err)
+				}
+				return
+			}
+		}
 
 	case err := <-serverErrChan:
 		if !errors.Is(err, http.ErrServerClosed) {
@@ -100,13 +119,15 @@ func main() {
 		}
 		return
 	}
-	const shutdownTimeout = 5 * time.Second
-	log.Printf("shutting down HTTP server (timeout: %s)", shutdownTimeout)
+	log.Printf("shutting down HTTP server (timeout: %s)", cfg.HTTP.ShutdownTimeout)
 
-	ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), cfg.HTTP.ShutdownTimeout)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
 		log.Printf("HTTP server shutdown error: %v", err)
+		if closeErr := server.Close(); closeErr != nil {
+			log.Printf("HTTP server force close error: %v", closeErr)
+		}
 		return
 	}
 

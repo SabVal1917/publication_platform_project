@@ -53,6 +53,12 @@ services:
     restart: always
     environment:
       HTTP_PORT: "${HTTP_PORT:-8080}"
+      HTTP_READ_HEADER_TIMEOUT: "${HTTP_READ_HEADER_TIMEOUT:-5s}"
+      HTTP_READ_TIMEOUT: "${HTTP_READ_TIMEOUT:-15s}"
+      HTTP_WRITE_TIMEOUT: "${HTTP_WRITE_TIMEOUT:-30s}"
+      HTTP_IDLE_TIMEOUT: "${HTTP_IDLE_TIMEOUT:-60s}"
+      HTTP_SHUTDOWN_TIMEOUT: "${HTTP_SHUTDOWN_TIMEOUT:-10s}"
+      HTTP_DRAIN_DELAY: "${HTTP_DRAIN_DELAY:-2s}"
       DB_HOST: "${DB_HOST:-db}"
       DB_PORT: "${DB_PORT:-5432}"
       DB_USER: "${DB_USER:-user}"
