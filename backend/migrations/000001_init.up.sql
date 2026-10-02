@@ -39,7 +39,6 @@ CREATE TABLE IF NOT EXISTS article_likes (
     PRIMARY KEY (user_id, article_id)
 );
 
-
 CREATE TABLE IF NOT EXISTS tags (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) UNIQUE NOT NULL

@@ -37,18 +37,10 @@ func requiredEnv(name string) (string, error) {
 }
 
 func Load() (Config, error) {
-	dbc := DBConfig{
-		Host:    envOrDefault("DB_HOST", "localhost"),
-		Port:    envOrDefault("DB_PORT", "5432"),
-		User:    envOrDefault("DB_USER", "user"),
-		Name:    envOrDefault("DB_NAME", "blog"),
-		SSLMode: envOrDefault("DB_SSLMODE", "disable"),
-	}
-	password, err := requiredEnv("DB_PASSWORD")
+	dbc, err := LoadDBConfig()
 	if err != nil {
 		return Config{}, err
 	}
-	dbc.Password = password
 	cfg := Config{
 		Database: dbc,
 		HTTPPort: envOrDefault("HTTP_PORT", "8080"),
@@ -62,4 +54,20 @@ func Load() (Config, error) {
 	}
 	cfg.JWTSecret = JWTSecret
 	return cfg, nil
+}
+
+func LoadDBConfig() (DBConfig, error) {
+	dbc := DBConfig{
+		Host:    envOrDefault("DB_HOST", "localhost"),
+		Port:    envOrDefault("DB_PORT", "5432"),
+		User:    envOrDefault("DB_USER", "user"),
+		Name:    envOrDefault("DB_NAME", "blog"),
+		SSLMode: envOrDefault("DB_SSLMODE", "disable"),
+	}
+	password, err := requiredEnv("DB_PASSWORD")
+	if err != nil {
+		return DBConfig{}, err
+	}
+	dbc.Password = password
+	return dbc, nil
 }
