@@ -115,3 +115,25 @@ func TestLoadRejectsInvalidHTTPTimeout(t *testing.T) {
 		t.Fatalf("Load() error = %v, want HTTP_READ_TIMEOUT error", err)
 	}
 }
+
+func TestLoadRequiresStrongJWTSecret(t *testing.T) {
+	tests := []struct {
+		name   string
+		secret string
+	}{
+		{name: "missing", secret: ""},
+		{name: "too short", secret: "short-secret"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Setenv("DB_PASSWORD", "password")
+			t.Setenv("JWT_SECRET", tt.secret)
+
+			_, err := Load()
+			if err == nil || !strings.Contains(err.Error(), "JWT_SECRET") {
+				t.Fatalf("Load() error = %v, want JWT_SECRET error", err)
+			}
+		})
+	}
+}
