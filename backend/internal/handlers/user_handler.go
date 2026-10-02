@@ -38,7 +38,7 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 	u.PasswordHash = hash
 
-	if err := h.Repo.Create(&u); err != nil {
+	if err := h.Repo.Create(r.Context(), &u); err != nil {
 		respondWithError(w, http.StatusInternalServerError, "Ошибка регистрации (возможно email занят)")
 		return
 	}
@@ -73,7 +73,7 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := h.Repo.GetByEmail(input.Email)
+	user, err := h.Repo.GetByEmail(r.Context(), input.Email)
 	if err != nil {
 		respondWithError(w, http.StatusUnauthorized, "Пользователь с таким email не найден")
 		return

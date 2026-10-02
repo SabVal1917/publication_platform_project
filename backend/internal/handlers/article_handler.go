@@ -27,7 +27,7 @@ func NewArticleHandler(repo *postgres.ArticleRepository) *ArticleHandler {
 }
 
 func (h *ArticleHandler) GetAllArticles(w http.ResponseWriter, r *http.Request) {
-	articles, err := h.Repo.GetAll()
+	articles, err := h.Repo.GetAll(r.Context())
 	if err != nil {
 		http.Error(w, "Ошибка получения статей: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -51,7 +51,7 @@ func (h *ArticleHandler) GetArticleByID(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	article, err := h.Repo.GetByID(id)
+	article, err := h.Repo.GetByID(r.Context(), id)
 	if err != nil {
 		http.Error(w, "Статья не найдена", http.StatusNotFound)
 		return
@@ -81,7 +81,7 @@ func (h *ArticleHandler) CreateArticle(w http.ResponseWriter, r *http.Request) {
 	}
 	a.AuthorID = userID
 
-	id, err := h.Repo.Create(&a)
+	id, err := h.Repo.Create(r.Context(), &a)
 	if err != nil {
 		http.Error(w, "Ошибка сохранения: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -106,7 +106,7 @@ func (h *ArticleHandler) LikeArticle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	newCount, isLiked, err := h.Repo.ToggleLike(articleID, userID)
+	newCount, isLiked, err := h.Repo.ToggleLike(r.Context(), articleID, userID)
 	if err != nil {
 		http.Error(w, "Database error: "+err.Error(), http.StatusInternalServerError)
 		return

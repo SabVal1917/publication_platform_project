@@ -59,6 +59,9 @@ services:
       DB_PASSWORD: "${DB_PASSWORD:?DB_PASSWORD is required}"
       DB_NAME: "${DB_NAME:-blog}"
       DB_SSLMODE: "${DB_SSLMODE:-disable}"
+      DB_MAX_OPEN_CONNS: "${DB_MAX_OPEN_CONNS:-10}"
+      DB_MAX_IDLE_CONNS: "${DB_MAX_IDLE_CONNS:-5}"
+      DB_CONN_MAX_LIFETIME: "${DB_CONN_MAX_LIFETIME:-30m}"
       JWT_SECRET: "${JWT_SECRET:?JWT_SECRET is required}"
     depends_on:
       db:

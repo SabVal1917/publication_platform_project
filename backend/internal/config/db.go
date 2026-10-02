@@ -1,29 +1,33 @@
 package config
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
-	"log"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
-func ConnectDB(dbc DBConfig) (*sql.DB, error) {
+func ConnectDB(ctx context.Context, dbc DBConfig) (*sql.DB, error) {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s",
 		dbc.Host, dbc.User, dbc.Password, dbc.Name, dbc.Port, dbc.SSLMode)
 
-	fmt.Println("Connecting to DB at:", dbc.Host)
 	db, err := sql.Open("pgx", dsn)
 	if err != nil {
-		log.Printf("Ошибка открытия БД: %v \n", err)
-		return nil, err
+		return nil, fmt.Errorf("open database: %w", err)
+	}
+	ConfigureDB(db, dbc)
+
+	if err := db.PingContext(ctx); err != nil {
+		_ = db.Close()
+		return nil, fmt.Errorf("ping database: %w", err)
 	}
 
-	if err := db.Ping(); err != nil {
-		log.Printf("Ошибка подключения к БД (Ping): %v \n", err)
-		return nil, err
-	}
-
-	log.Println("Успешное подключение к БД!")
 	return db, nil
+}
+
+func ConfigureDB(db *sql.DB, dbc DBConfig) {
+	db.SetMaxOpenConns(dbc.MaxOpenConns)
+	db.SetMaxIdleConns(dbc.MaxIdleConns)
+	db.SetConnMaxLifetime(dbc.ConnMaxLifetime)
 }

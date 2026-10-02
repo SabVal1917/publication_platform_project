@@ -24,7 +24,7 @@ func (h *CommentHandler) GetCommentsByArticle(w http.ResponseWriter, r *http.Req
 	articleIDStr := chi.URLParam(r, "id")
 	articleID, _ := strconv.Atoi(articleIDStr)
 
-	comments, err := h.Repo.GetByArticleID(articleID)
+	comments, err := h.Repo.GetByArticleID(r.Context(), articleID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -56,7 +56,7 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 	}
 	c.AuthorID = userID
 
-	if err := h.Repo.Create(&c); err != nil {
+	if err := h.Repo.Create(r.Context(), &c); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

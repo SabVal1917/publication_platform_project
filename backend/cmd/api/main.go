@@ -25,7 +25,9 @@ func main() {
 	if loadErr != nil {
 		log.Fatalf("load config: %v", loadErr)
 	}
-	db, dbErr := config.ConnectDB(cfg.Database)
+	dbConnectCtx, dbConnectCancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer dbConnectCancel()
+	db, dbErr := config.ConnectDB(dbConnectCtx, cfg.Database)
 	if dbErr != nil {
 		log.Fatalf("db conn: %v", dbErr)
 	}
