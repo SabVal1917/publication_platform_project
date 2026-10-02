@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -189,7 +189,7 @@ func (h *ArticleHandler) UpdateArticle(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusGatewayTimeout, "Превышено время ожидания базы данных")
 
 	default:
-		log.Printf("update article %d: %v", articleID, err)
+		slog.ErrorContext(r.Context(), "update_article_failed", "article_id", articleID, "error", err)
 		respondWithError(w, http.StatusInternalServerError, "Не удалось обновить статью")
 	}
 }
@@ -222,7 +222,7 @@ func (h *ArticleHandler) DeleteArticle(w http.ResponseWriter, r *http.Request) {
 	case errors.Is(err, context.DeadlineExceeded):
 		respondWithError(w, http.StatusGatewayTimeout, "Превышено время ожидания базы данных")
 	default:
-		log.Printf("delete article %d: %v", articleID, err)
+		slog.ErrorContext(r.Context(), "delete_article_failed", "article_id", articleID, "error", err)
 		respondWithError(w, http.StatusInternalServerError, "Не удалось удалить статью")
 	}
 }

@@ -3,8 +3,9 @@ package main
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
+	"os"
 	"os/signal"
 	"syscall"
 	"time"
@@ -12,24 +13,32 @@ import (
 	"backend/internal/config"
 	"backend/internal/handlers"
 	customMiddleware "backend/internal/handlers/middleware"
+	"backend/internal/observability"
 	"backend/internal/pkg/utils"
 	"backend/internal/repository/postgres"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
 )
 
 func main() {
+	logger := observability.NewJSONLogger(os.Stdout)
+	slog.SetDefault(logger)
+
 	cfg, loadErr := config.Load()
 	if loadErr != nil {
-		log.Fatalf("load config: %v", loadErr)
+		logger.Error("load_config_failed", "error", loadErr)
+		os.Exit(1)
 	}
 	dbConnectCtx, dbConnectCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer dbConnectCancel()
 	db, dbErr := config.ConnectDB(dbConnectCtx, cfg.Database)
 	if dbErr != nil {
-		log.Fatalf("db conn: %v", dbErr)
+		logger.Error("database_connection_failed", "error", dbErr)
+		os.Exit(1)
 	}
 	defer db.Close()
 	tokens := utils.NewTokenManager(cfg.JWTSecret)
@@ -43,9 +52,17 @@ func main() {
 	userHandler := handlers.NewUserHandler(userRepo, tokens)
 	readiness := handlers.NewReadinessState()
 	healthHandler := handlers.NewHealthHandler(db, readiness)
+	registry := prometheus.NewRegistry()
+	registry.MustRegister(
+		collectors.NewGoCollector(),
+		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
+	)
+	metrics := observability.NewMetrics(registry, db)
 
 	r := chi.NewRouter()
-	r.Use(middleware.Logger)
+	r.Use(middleware.RequestID)
+	r.Use(observability.RequestLogger(logger))
+	r.Use(metrics.Middleware)
 	r.Use(middleware.Recoverer)
 
 	r.Use(cors.Handler(cors.Options{
@@ -63,6 +80,7 @@ func main() {
 	r.Get("/api/articles/{id}/comments", commentHandler.GetCommentsByArticle)
 	r.Get("/health/live", healthHandler.Live)
 	r.Get("/health/ready", healthHandler.Ready)
+	r.Handle("/metrics", metrics.Handler())
 
 	r.Post("/api/register", userHandler.Register)
 	r.Post("/api/login", userHandler.Login)
@@ -88,7 +106,7 @@ func main() {
 	}
 	serverErrChan := make(chan error, 1)
 	go func() {
-		log.Printf("HTTP server starting on %s", server.Addr)
+		logger.Info("http_server_starting", "address", server.Addr)
 		serverErrChan <- server.ListenAndServe()
 	}()
 
@@ -97,9 +115,9 @@ func main() {
 
 	select {
 	case <-signalCtx.Done():
-		log.Printf("shutdown signal received")
+		logger.Info("shutdown_signal_received")
 		readiness.StartDraining()
-		log.Printf("readiness disabled; draining for %s", cfg.HTTP.DrainDelay)
+		logger.Info("readiness_disabled", "drain_delay", cfg.HTTP.DrainDelay)
 		if cfg.HTTP.DrainDelay > 0 {
 			timer := time.NewTimer(cfg.HTTP.DrainDelay)
 			select {
@@ -107,7 +125,7 @@ func main() {
 			case err := <-serverErrChan:
 				timer.Stop()
 				if !errors.Is(err, http.ErrServerClosed) {
-					log.Printf("HTTP server error while draining: %v", err)
+					logger.Error("http_server_failed_while_draining", "error", err)
 				}
 				return
 			}
@@ -115,25 +133,25 @@ func main() {
 
 	case err := <-serverErrChan:
 		if !errors.Is(err, http.ErrServerClosed) {
-			log.Printf("HTTP server error: %v", err)
+			logger.Error("http_server_failed", "error", err)
 		}
 		return
 	}
-	log.Printf("shutting down HTTP server (timeout: %s)", cfg.HTTP.ShutdownTimeout)
+	logger.Info("http_server_shutting_down", "timeout", cfg.HTTP.ShutdownTimeout)
 
 	ctx, cancel := context.WithTimeout(context.Background(), cfg.HTTP.ShutdownTimeout)
 	defer cancel()
 	if err := server.Shutdown(ctx); err != nil {
-		log.Printf("HTTP server shutdown error: %v", err)
+		logger.Error("http_server_shutdown_failed", "error", err)
 		if closeErr := server.Close(); closeErr != nil {
-			log.Printf("HTTP server force close error: %v", closeErr)
+			logger.Error("http_server_force_close_failed", "error", closeErr)
 		}
 		return
 	}
 
 	err := <-serverErrChan
 	if !errors.Is(err, http.ErrServerClosed) {
-		log.Printf("HTTP server stopped with err: %v", err)
+		logger.Error("http_server_stopped_with_error", "error", err)
 	}
-	log.Printf("HTTP server stopped gracefully")
+	logger.Info("http_server_stopped_gracefully")
 }
