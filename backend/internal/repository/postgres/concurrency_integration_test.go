@@ -5,6 +5,7 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"sync"
@@ -15,6 +16,18 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
+
+func TestCanceledContextStopsQuery(t *testing.T) {
+	db := integrationDB(t)
+	repo := NewArticleRepository(db)
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	_, err := repo.GetAll(ctx)
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("GetAll() error = %v, want context.Canceled", err)
+	}
+}
 
 func integrationDB(t *testing.T) *sql.DB {
 	t.Helper()
