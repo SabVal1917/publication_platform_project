@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -34,8 +35,26 @@ func TestRequestLoggerWritesStructuredRecord(t *testing.T) {
 	if err := json.Unmarshal(output.Bytes(), &record); err != nil {
 		t.Fatalf("decode JSON log: %v; output=%q", err, output.String())
 	}
-	if record["msg"] != "http_request" {
-		t.Errorf("msg = %v, want http_request", record["msg"])
+	if record["message"] != "http_request" {
+		t.Errorf("message = %v, want http_request", record["message"])
+	}
+	if record["service.name"] != serviceName {
+		t.Errorf("service.name = %v, want %q", record["service.name"], serviceName)
+	}
+	timestamp, ok := record["timestamp"].(string)
+	if !ok {
+		t.Errorf("timestamp = %v, want a string", record["timestamp"])
+	} else if _, err := time.Parse(time.RFC3339Nano, timestamp); err != nil {
+		t.Errorf("timestamp = %q, want RFC3339Nano: %v", timestamp, err)
+	}
+	if record["level"] != "INFO" {
+		t.Errorf("level = %v, want INFO", record["level"])
+	}
+	if _, exists := record["time"]; exists {
+		t.Error("legacy time field is present")
+	}
+	if _, exists := record["msg"]; exists {
+		t.Error("legacy msg field is present")
 	}
 	if record["method"] != http.MethodGet {
 		t.Errorf("method = %v, want GET", record["method"])

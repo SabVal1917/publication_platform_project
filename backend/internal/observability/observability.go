@@ -16,6 +16,8 @@ import (
 
 const metricNamespace = "publication_platform"
 
+const serviceName = "publication-platform-backend"
+
 type Metrics struct {
 	registry *prometheus.Registry
 	requests *prometheus.CounterVec
@@ -24,7 +26,19 @@ type Metrics struct {
 }
 
 func NewJSONLogger(output io.Writer) *slog.Logger {
-	return slog.New(slog.NewJSONHandler(output, nil))
+	handler := slog.NewJSONHandler(output, &slog.HandlerOptions{
+		ReplaceAttr: func(_ []string, attr slog.Attr) slog.Attr {
+			switch attr.Key {
+			case slog.TimeKey:
+				attr.Key = "timestamp"
+			case slog.MessageKey:
+				attr.Key = "message"
+			}
+			return attr
+		},
+	})
+
+	return slog.New(handler).With("service.name", serviceName)
 }
 
 func RequestLogger(logger *slog.Logger) func(http.Handler) http.Handler {
