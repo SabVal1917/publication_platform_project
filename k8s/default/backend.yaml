@@ -31,7 +31,7 @@ spec:
             path: /health/ready
             port: 8080
           initialDelaySeconds: 3
-          periodSeconds: 5    
+          periodSeconds: 5
 
         livenessProbe:
           httpGet:
@@ -48,7 +48,7 @@ spec:
             memory: "128Mi"
             cpu: "500m"
 
---- 
+---
 
 apiVersion: v1
 kind: Service

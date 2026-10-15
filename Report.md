@@ -4,7 +4,8 @@
 
 В рамках данной задачи я запустил своё приложение в однодовой инсталляции Kubernetes - minikube.
 
-Все манифесты находятся в директории k8s/
+Манифесты приложения находятся в директории `k8s/default/`.
+Манифесты VictoriaLogs и Vector находятся в директории `k8s/logging/`.
 
 Основные компоненты приложения:
 - frontend;
@@ -147,7 +148,9 @@ kubectl scale deployment backend --replicas=3
 Манифесты применяются командой:
 
 ```bash
-kubectl apply -f k8s/
+kubectl apply -k k8s/default/
+
+kubectl apply -k k8s/logging/
 ```
 
 Проверка соответствующих абстракций:

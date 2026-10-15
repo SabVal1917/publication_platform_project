@@ -1,0 +1,38 @@
+data_dir: /vector-data-dir
+
+sources:
+  kubernetes_logs:
+    type: kubernetes_logs
+    self_node_name: ${VECTOR_SELF_NODE_NAME}
+    extra_label_selector: app=backend
+
+transforms:
+  parse_backend_json:
+    type: remap
+    inputs:
+      - kubernetes_logs
+    drop_on_error: true
+    source: |-
+      parsed = parse_json!(string!(.message))
+      . = merge(., object!(parsed))
+
+sinks:
+  victoria_logs:
+    type: elasticsearch
+    inputs:
+      - parse_backend_json
+    endpoints:
+      - http://victoria-logs.observability.svc.cluster.local:9428/insert/elasticsearch/
+    mode: bulk
+    api_version: v8
+    compression: gzip
+    healthcheck:
+      enabled: false
+    query:
+      _msg_field: message
+      _time_field: timestamp
+      _stream_fields: "service.name,kubernetes.pod_namespace,kubernetes.container_name"
+    buffer:
+      type: disk
+      max_size: 268435488
+      when_full: block

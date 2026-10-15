@@ -27,8 +27,8 @@ spec:
           imagePullPolicy: Never
 
           command:
-          - ./migrate
-          
+            - ./migrate
+
           env:
             - name: DB_HOST
               valueFrom:
