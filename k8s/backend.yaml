@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: backend
+
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: blog-backend:dev
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8080
+        envFrom:
+          - configMapRef:
+              name: blog-config
+          - secretRef:
+              name: blog-secrets
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 3
+          periodSeconds: 5    
+
+        livenessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+
+        resources:
+          requests:
+            cpu: "100m"
+            memory: "64Mi"
+          limits:
+            memory: "128Mi"
+            cpu: "500m"
+
+--- 
+
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: backend
+
+spec:
+  selector:
+    app: backend
+
+  ports:
+    - port: 8080
+      targetPort: 8080
+
+  type: ClusterIP
