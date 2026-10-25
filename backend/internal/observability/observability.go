@@ -113,7 +113,7 @@ func (m *Metrics) Middleware(next http.Handler) http.Handler {
 }
 
 func (m *Metrics) Handler() http.Handler {
-	return promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{})
+	return promhttp.HandlerFor(m.registry, promhttp.HandlerOpts{EnableOpenMetrics: true})
 }
 
 func routePattern(r *http.Request) string {

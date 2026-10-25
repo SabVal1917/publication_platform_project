@@ -47,9 +47,6 @@ func main() {
 	commentRepo := postgres.NewCommentRepository(db)
 	userRepo := postgres.NewUserRepository(db)
 
-	articleHandler := handlers.NewArticleHandler(articleRepo)
-	commentHandler := handlers.NewCommentHandler(commentRepo)
-	userHandler := handlers.NewUserHandler(userRepo, tokens)
 	readiness := handlers.NewReadinessState()
 	healthHandler := handlers.NewHealthHandler(db, readiness)
 	registry := prometheus.NewRegistry()
@@ -58,6 +55,10 @@ func main() {
 		collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}),
 	)
 	metrics := observability.NewMetrics(registry, db)
+	businessMetrics := observability.NewBusinessMetrics(registry)
+	articleHandler := handlers.NewArticleHandler(articleRepo, businessMetrics)
+	commentHandler := handlers.NewCommentHandler(commentRepo, businessMetrics)
+	userHandler := handlers.NewUserHandler(userRepo, tokens, businessMetrics)
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)

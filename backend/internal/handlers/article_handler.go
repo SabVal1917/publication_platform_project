@@ -13,17 +13,19 @@ import (
 
 	"backend/internal/domain/models"
 	"backend/internal/handlers/middleware"
+	"backend/internal/observability"
 	"backend/internal/repository/postgres"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type ArticleHandler struct {
-	Repo *postgres.ArticleRepository
+	Repo     *postgres.ArticleRepository
+	BMetrics *observability.BusinessMetrics
 }
 
-func NewArticleHandler(repo *postgres.ArticleRepository) *ArticleHandler {
-	return &ArticleHandler{Repo: repo}
+func NewArticleHandler(repo *postgres.ArticleRepository, metrics *observability.BusinessMetrics) *ArticleHandler {
+	return &ArticleHandler{Repo: repo, BMetrics: metrics}
 }
 
 func (h *ArticleHandler) GetAllArticles(w http.ResponseWriter, r *http.Request) {
@@ -86,6 +88,8 @@ func (h *ArticleHandler) CreateArticle(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Ошибка сохранения: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	h.BMetrics.ArticleCreated()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)

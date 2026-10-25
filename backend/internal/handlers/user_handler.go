@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"backend/internal/domain/models"
+	"backend/internal/observability"
 	"backend/internal/pkg/utils"
 	"backend/internal/repository/postgres"
 )
@@ -12,10 +13,13 @@ import (
 type UserHandler struct {
 	Repo     *postgres.UserRepository
 	TManager *utils.TokenManager
+	BMetrics *observability.BusinessMetrics
 }
 
-func NewUserHandler(repo *postgres.UserRepository, tokens *utils.TokenManager) *UserHandler {
-	return &UserHandler{Repo: repo, TManager: tokens}
+func NewUserHandler(repo *postgres.UserRepository,
+	tokens *utils.TokenManager, metrics *observability.BusinessMetrics,
+) *UserHandler {
+	return &UserHandler{Repo: repo, TManager: tokens, BMetrics: metrics}
 }
 
 func respondWithError(w http.ResponseWriter, code int, message string) {
@@ -42,6 +46,8 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "Ошибка регистрации (возможно email занят)")
 		return
 	}
+
+	h.BMetrics.UserRegistered()
 
 	token, err := h.TManager.GenerateToken(u.ID)
 	if err != nil {
@@ -89,6 +95,8 @@ func (h *UserHandler) Login(w http.ResponseWriter, r *http.Request) {
 		respondWithError(w, http.StatusInternalServerError, "Ошибка генерации токена")
 		return
 	}
+	h.BMetrics.UserLoggedIn()
+
 	uResp := models.UserResponse{
 		ID:        user.ID,
 		Username:  user.Username,

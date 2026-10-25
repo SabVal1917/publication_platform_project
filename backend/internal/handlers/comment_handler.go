@@ -7,17 +7,19 @@ import (
 
 	"backend/internal/domain/models"
 	"backend/internal/handlers/middleware"
+	"backend/internal/observability"
 	"backend/internal/repository/postgres"
 
 	"github.com/go-chi/chi/v5"
 )
 
 type CommentHandler struct {
-	Repo *postgres.CommentRepository
+	Repo     *postgres.CommentRepository
+	BMetrics *observability.BusinessMetrics
 }
 
-func NewCommentHandler(repo *postgres.CommentRepository) *CommentHandler {
-	return &CommentHandler{Repo: repo}
+func NewCommentHandler(repo *postgres.CommentRepository, metrics *observability.BusinessMetrics) *CommentHandler {
+	return &CommentHandler{Repo: repo, BMetrics: metrics}
 }
 
 func (h *CommentHandler) GetCommentsByArticle(w http.ResponseWriter, r *http.Request) {
@@ -60,6 +62,8 @@ func (h *CommentHandler) CreateComment(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	h.BMetrics.CommentCreated()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
