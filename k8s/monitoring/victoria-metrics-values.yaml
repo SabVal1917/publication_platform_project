@@ -1,0 +1,15 @@
+server:
+  fullnameOverride: victoria-metrics
+  retentionPeriod: "7d"
+
+  persistentVolume:
+    enabled: true
+    size: 2Gi
+
+  scrape:
+    enabled: true
+
+# helm install vm-single vm/victoria-metrics-single \
+#   --namespace monitoring \
+#   --create-namespace \
+#   --values k8s/monitoring/victoria-metrics-values.yaml \

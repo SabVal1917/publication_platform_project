@@ -16,6 +16,10 @@ spec:
     metadata:
       labels:
         app: db
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9187"
+        prometheus.io/path: "/metrics"
 
     spec:
       containers:
@@ -68,6 +72,37 @@ spec:
 
             initialDelaySeconds: 5
             periodSeconds: 5
+        - name: postgres-exporter
+          image: quay.io/prometheuscommunity/postgres-exporter:v0.19.0
+
+          ports:
+            - name: metrics
+              containerPort: 9187
+          env:
+            - name: DATA_SOURCE_URI
+              value: "localhost:5432/blog?sslmode=disable"
+
+            - name: DATA_SOURCE_USER
+              valueFrom:
+                configMapKeyRef:
+                  name: blog-config
+                  key: DB_USER
+
+            - name: DATA_SOURCE_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: blog-secrets
+                  key: DB_PASSWORD
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "32Mi"
+
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+          
+        
       volumes:
       - name: postgres-data
         persistentVolumeClaim:
