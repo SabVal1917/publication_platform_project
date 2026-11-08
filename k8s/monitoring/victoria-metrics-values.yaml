@@ -1,6 +1,6 @@
 server:
   fullnameOverride: victoria-metrics
-  retentionPeriod: "7d"
+  retentionPeriod: "35d"
 
   persistentVolume:
     enabled: true

@@ -71,12 +71,13 @@ func main() {
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
 	}))
+	withSREDemo := configureSREDemo(r)
 
 	r.Get("/api/ping", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Pong!"))
 	})
 
-	r.Get("/api/articles", articleHandler.GetAllArticles)
+	r.Get("/api/articles", withSREDemo(articleHandler.GetAllArticles))
 	r.Get("/api/articles/{id}", articleHandler.GetArticleByID)
 	r.Get("/api/articles/{id}/comments", commentHandler.GetCommentsByArticle)
 	r.Get("/health/live", healthHandler.Live)

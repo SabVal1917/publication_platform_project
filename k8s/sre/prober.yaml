@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sre-prober
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sre-prober
+  template:
+    metadata:
+      labels:
+        app: sre-prober
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/metrics"
+    spec:
+      containers:
+        - name: prober
+          image: blog-backend:sre-demo
+          imagePullPolicy: Never
+          command: ["/app/prober"]
+          env:
+            - name: PROBE_URL
+              value: http://backend:8080/api/articles
+          ports:
+            - name: metrics
+              containerPort: 8081
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
