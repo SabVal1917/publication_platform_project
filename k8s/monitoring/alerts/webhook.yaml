@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: alert-webhook
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: alert-webhook
+  template:
+    metadata:
+      labels:
+        app: alert-webhook
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: webhook
+          image: mendhak/http-https-echo:42
+          env:
+            - name: HTTP_PORT
+              value: "8080"
+            - name: DISABLE_REQUEST_LOGS
+              value: "true"
+            - name: LOG_IGNORE_PATH
+              value: "^/health$"
+            - name: LOG_WITHOUT_NEWLINE
+              value: "true"
+          ports:
+            - name: http
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: alert-webhook
+spec:
+  selector:
+    app: alert-webhook
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

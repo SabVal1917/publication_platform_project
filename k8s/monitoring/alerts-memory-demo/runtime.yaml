@@ -1,0 +1,20 @@
+groups:
+  - name: publication-platform-runtime
+    interval: 15s
+    rules:
+      - alert: BackendGoHeapHigh
+        expr: |
+          max by (namespace, pod) (
+            go_memstats_heap_alloc_bytes{
+              job="kubernetes-pods", namespace="default", app="backend"
+            }
+          ) > 1
+        for: 30s
+        labels:
+          severity: warning
+          service: publication-platform
+          component: go-runtime
+          test: memory-demo
+        annotations:
+          summary: "ТЕСТ: алерт Go heap в {{ $labels.pod }}"
+          description: "Реальная Go heap: {{ printf \"%.0f\" $value }} байт. Только для проверки доставки: порог временно снижен до 1 байта, for до 30 секунд. Рабочий порог: 64 MiB в течение 2 минут."

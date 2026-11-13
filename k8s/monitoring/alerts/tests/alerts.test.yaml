@@ -1,0 +1,237 @@
+rule_files:
+- ../rules/*.yaml
+evaluation_interval: 15s
+tests:
+- name: healthy prober
+  interval: 15s
+  input_series:
+  - series: up{job="kubernetes-pods",namespace="default",app="sre-prober"}
+    values: 1x40
+  - series: publication_platform_probe_success{job="kubernetes-pods",namespace="default",app="sre-prober"}
+    values: 1x40
+  - series: publication_platform_probe_timestamp_seconds{job="kubernetes-pods",namespace="default",app="sre-prober"}
+    values: 946684800+15x40
+  alert_rule_test:
+  - eval_time: 5m
+    groupname: publication-platform-service
+    alertname: ProberUnavailable
+    exp_alerts: []
+- name: failed probe
+  interval: 15s
+  input_series:
+  - series: up{job="kubernetes-pods",namespace="default",app="sre-prober"}
+    values: 1x40
+  - series: publication_platform_probe_success{job="kubernetes-pods",namespace="default",app="sre-prober"}
+    values: '0x40'
+  - series: publication_platform_probe_timestamp_seconds{job="kubernetes-pods",namespace="default",app="sre-prober"}
+    values: 946684800+15x40
+  alert_rule_test:
+  - eval_time: 30s
+    groupname: publication-platform-service
+    alertname: ProberUnavailable
+    exp_alerts: []
+  - eval_time: 2m
+    groupname: publication-platform-service
+    alertname: ProberUnavailable
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        service: publication-platform
+        component: prober
+        namespace: default
+      exp_annotations:
+        summary: Пробер обнаружил недоступность или перестал работать
+        description: В течение 1 минуты проба API неуспешна, метрики пробера недоступны либо последняя
+          завершённая проба старше 30 секунд. Проверить backend, PostgreSQL и Deployment sre-prober.
+- name: failed scrape
+  interval: 15s
+  input_series:
+  - series: up{job="kubernetes-pods",namespace="default",app="sre-prober"}
+    values: '0x40'
+  - series: publication_platform_probe_success{job="kubernetes-pods",namespace="default",app="sre-prober"}
+    values: 1x40
+  - series: publication_platform_probe_timestamp_seconds{job="kubernetes-pods",namespace="default",app="sre-prober"}
+    values: 946684800+15x40
+  alert_rule_test:
+  - eval_time: 30s
+    groupname: publication-platform-service
+    alertname: ProberUnavailable
+    exp_alerts: []
+  - eval_time: 2m
+    groupname: publication-platform-service
+    alertname: ProberUnavailable
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        service: publication-platform
+        component: prober
+        namespace: default
+      exp_annotations:
+        summary: Пробер обнаружил недоступность или перестал работать
+        description: В течение 1 минуты проба API неуспешна, метрики пробера недоступны либо последняя
+          завершённая проба старше 30 секунд. Проверить backend, PostgreSQL и Deployment sre-prober.
+- name: stale probe
+  interval: 15s
+  input_series:
+  - series: up{job="kubernetes-pods",namespace="default",app="sre-prober"}
+    values: 1x40
+  - series: publication_platform_probe_success{job="kubernetes-pods",namespace="default",app="sre-prober"}
+    values: 1x40
+  - series: publication_platform_probe_timestamp_seconds{job="kubernetes-pods",namespace="default",app="sre-prober"}
+    values: 946684800x40
+  alert_rule_test:
+  - eval_time: 30s
+    groupname: publication-platform-service
+    alertname: ProberUnavailable
+    exp_alerts: []
+  - eval_time: 2m
+    groupname: publication-platform-service
+    alertname: ProberUnavailable
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        service: publication-platform
+        component: prober
+        namespace: default
+      exp_annotations:
+        summary: Пробер обнаружил недоступность или перестал работать
+        description: В течение 1 минуты проба API неуспешна, метрики пробера недоступны либо последняя
+          завершённая проба старше 30 секунд. Проверить backend, PostgreSQL и Deployment sre-prober.
+- name: prober disappeared completely
+  interval: 15s
+  input_series: []
+  alert_rule_test:
+  - eval_time: 30s
+    groupname: publication-platform-service
+    alertname: ProberUnavailable
+    exp_alerts: []
+  - eval_time: 2m
+    groupname: publication-platform-service
+    alertname: ProberUnavailable
+    exp_alerts:
+    - exp_labels:
+        severity: critical
+        service: publication-platform
+        component: prober
+        namespace: default
+      exp_annotations:
+        summary: Пробер обнаружил недоступность или перестал работать
+        description: В течение 1 минуты проба API неуспешна, метрики пробера недоступны либо последняя
+          завершённая проба старше 30 секунд. Проверить backend, PostgreSQL и Deployment sre-prober.
+- name: heap must remain high for two minutes
+  interval: 15s
+  input_series:
+  - series: go_memstats_heap_alloc_bytes{job="kubernetes-pods",namespace="default",app="backend",pod="backend-test"}
+    values: 83886080x40
+  alert_rule_test:
+  - eval_time: 1m
+    groupname: publication-platform-runtime
+    alertname: BackendGoHeapHigh
+    exp_alerts: []
+  - eval_time: 3m
+    groupname: publication-platform-runtime
+    alertname: BackendGoHeapHigh
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        service: publication-platform
+        component: go-runtime
+        namespace: default
+        pod: backend-test
+      exp_annotations:
+        summary: Высокое потребление Go heap в backend-test
+        description: 'Занятая Go heap: 83886080 байт. Порог: более 64 MiB в течение 2 минут при лимите
+          контейнера 128 MiB.'
+- name: heap at boundary is allowed
+  interval: 15s
+  input_series:
+  - series: go_memstats_heap_alloc_bytes{job="kubernetes-pods",namespace="default",app="backend",pod="backend-test"}
+    values: 67108864x40
+  alert_rule_test:
+  - eval_time: 5m
+    groupname: publication-platform-runtime
+    alertname: BackendGoHeapHigh
+    exp_alerts: []
+- name: sustained 5xx and health exclusion
+  interval: 15s
+  input_series:
+  - series: publication_platform_http_requests_total{job="kubernetes-pods",namespace="default",app="backend",route="/api/articles",method="GET",status="500"}
+    values: 0+2x40
+  - series: publication_platform_http_requests_total{job="kubernetes-pods",namespace="default",app="backend",route="/api/ping",method="GET",status="500"}
+    values: 0+100x40
+  alert_rule_test:
+  - eval_time: 30s
+    groupname: publication-platform-service
+    alertname: BackendHigh5xxCount
+    exp_alerts: []
+  - eval_time: 5m
+    groupname: publication-platform-service
+    alertname: BackendHigh5xxCount
+    exp_alerts:
+    - exp_labels:
+        namespace: default
+        severity: critical
+        service: publication-platform
+        component: backend
+      exp_annotations:
+        summary: Backend возвращает много ответов 5xx
+        description: 'За последние 5 минут зарегистрировано 40.0 ответов 5xx на API. Порог: не менее 5,
+          условие сохраняется 1 минуту.'
+- name: healthcheck errors do not alert
+  interval: 15s
+  input_series:
+  - series: publication_platform_http_requests_total{job="kubernetes-pods",namespace="default",app="backend",route="/api/ping",method="GET",status="500"}
+    values: 0+100x40
+  - series: publication_platform_http_requests_total{job="kubernetes-pods",namespace="default",app="backend",route="/api/articles",method="GET",status="400"}
+    values: 0+100x40
+  alert_rule_test:
+  - eval_time: 5m
+    groupname: publication-platform-service
+    alertname: BackendHigh5xxCount
+    exp_alerts: []
+- name: sustained latency
+  interval: 15s
+  input_series:
+  - series: publication_platform_http_request_duration_seconds_bucket{job="kubernetes-pods",namespace="default",app="backend",route="/api/articles",method="GET",status="200",le="0.5"}
+    values: 0+0x40
+  - series: publication_platform_http_request_duration_seconds_bucket{job="kubernetes-pods",namespace="default",app="backend",route="/api/articles",method="GET",status="200",le="1"}
+    values: 0+10x40
+  - series: publication_platform_http_request_duration_seconds_bucket{job="kubernetes-pods",namespace="default",app="backend",route="/api/articles",method="GET",status="200",le="+Inf"}
+    values: 0+10x40
+  - series: publication_platform_http_request_duration_seconds_count{job="kubernetes-pods",namespace="default",app="backend",route="/api/articles",method="GET",status="200"}
+    values: 0+10x40
+  alert_rule_test:
+  - eval_time: 1m
+    groupname: publication-platform-service
+    alertname: BackendHighLatency
+    exp_alerts: []
+  - eval_time: 4m
+    groupname: publication-platform-service
+    alertname: BackendHighLatency
+    exp_alerts:
+    - exp_labels:
+        severity: warning
+        service: publication-platform
+        component: backend
+        namespace: default
+        route: /api/articles
+      exp_annotations:
+        summary: Высокая задержка API /api/articles
+        description: 'p95 успешных ответов за 5 минут: 0.975 с. Порог: более 0.5 с в течение 2 минут при
+          не менее 20 ответах за окно.'
+- name: too few requests do not alert on latency
+  interval: 15s
+  input_series:
+  - series: publication_platform_http_request_duration_seconds_bucket{job="kubernetes-pods",namespace="default",app="backend",route="/api/articles",method="GET",status="200",le="0.5"}
+    values: 0+0x40
+  - series: publication_platform_http_request_duration_seconds_bucket{job="kubernetes-pods",namespace="default",app="backend",route="/api/articles",method="GET",status="200",le="1"}
+    values: 0+0.5x40
+  - series: publication_platform_http_request_duration_seconds_bucket{job="kubernetes-pods",namespace="default",app="backend",route="/api/articles",method="GET",status="200",le="+Inf"}
+    values: 0+0.5x40
+  - series: publication_platform_http_request_duration_seconds_count{job="kubernetes-pods",namespace="default",app="backend",route="/api/articles",method="GET",status="200"}
+    values: 0+0.5x40
+  alert_rule_test:
+  - eval_time: 5m
+    groupname: publication-platform-service
+    alertname: BackendHighLatency
+    exp_alerts: []

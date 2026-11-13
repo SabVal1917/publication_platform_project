@@ -1,0 +1,19 @@
+groups:
+  - name: publication-platform-runtime
+    interval: 15s
+    rules:
+      - alert: BackendGoHeapHigh
+        expr: |
+          max by (namespace, pod) (
+            go_memstats_heap_alloc_bytes{
+              job="kubernetes-pods", namespace="default", app="backend"
+            }
+          ) > 64 * 1024 * 1024
+        for: 2m
+        labels:
+          severity: warning
+          service: publication-platform
+          component: go-runtime
+        annotations:
+          summary: "Высокое потребление Go heap в {{ $labels.pod }}"
+          description: "Занятая Go heap: {{ printf \"%.0f\" $value }} байт. Порог: более 64 MiB в течение 2 минут при лимите контейнера 128 MiB."

@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - default/
   - logging/
+  - monitoring/alerts/
